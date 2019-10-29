@@ -1,0 +1,8 @@
+.pytest_cache/*
+.vscode/*
+base_data/*
+test/*
+train/*
+validation/*
+kaggle_test.zip
+kaggle_train.zip
