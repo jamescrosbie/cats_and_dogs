@@ -1,8 +1,12 @@
+# VS code setup
 .pytest_cache/*
 .vscode/*
+# data files
 base_data/*
 test/*
 train/*
-validation/*
+val/*
 kaggle_test.zip
 kaggle_train.zip
+# model history
+/checkpoints/*
