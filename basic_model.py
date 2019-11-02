@@ -38,7 +38,7 @@ filter_size = [(3, 3), (3, 3), (3, 3), (3, 3)]
 pooling_size = [(2, 2), (2, 2), (2, 2), (2, 2)]
 dense_units = [128, 512]
 drop_out = 0.0
-epochs = 100
+epochs = 10
 val_split = 0.33
 
 # set callbacks
@@ -104,6 +104,7 @@ def build_model():
 def plot_curves(history):
     x = range(1, len(history.history["loss"]) + 1)
 
+    plt.figure(figsize=(12, 10))
     plt.plot(x, history.history["acc"], label="accuracy")
     plt.plot(x, history.history["loss"], label="loss")
     try:
@@ -139,13 +140,13 @@ if __name__ == "__main__":
     # build model
     model = build_model()
     print(model.summary())
-    # history = model.fit_generator(
-    #     train_gen,
-    #     steps_per_epoch=100,
-    #     epochs=epochs,
-    #     validation_data=val_gen,
-    #     validation_steps=50,
-    #     callbacks=[callback_ES, callback_CP],
-    # )
-    # model.save("catsVdogs_model1.h5")
-    # plot_curves(history)
+    history = model.fit_generator(
+        train_gen,
+        steps_per_epoch=100,
+        epochs=epochs,
+        validation_data=val_gen,
+        validation_steps=50,
+        callbacks=[callback_ES, callback_CP],
+    )
+    model.save("catsVdogs_model1.h5")
+    plot_curves(history)
