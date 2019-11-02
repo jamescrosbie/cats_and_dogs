@@ -12,6 +12,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 # for the training
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
+# analysis
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -123,8 +124,8 @@ def plot_curves(history):
 
 if __name__ == "__main__":
     # set up the generators
-    train_data_gen = ImageDataGenerator(rescale=1 / 255.0)
-    val_data_gen = ImageDataGenerator(rescale=1 / 255.0)
+    train_data_gen = ImageDataGenerator(rescale= 1/255.0)
+    val_data_gen = ImageDataGenerator(rescale= 1/255.0)
 
     train_gen = train_data_gen.flow_from_directory(
         train_dir,
