@@ -2,7 +2,7 @@ import tensorflow as tf
 
 # for the model
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPool2D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import Input, Conv2D, MaxPool2D, Flatten, Dense, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam
 
 # for the data
@@ -62,35 +62,27 @@ def build_model():
 
     # Build network
     model = Sequential()
+    model.add(Input(shape=input_size))
     # CNN
     for k, v in enumerate(filters):
-        if k == 0:
-            model.add(
-                Conv2D(
-                    filters=v,
-                    kernel_size=filter_size[k],
-                    padding="same",
-                    activation="relu",
-                    input_shape=input_size,
-                )
-            )
-        else:
-            model.add(
-                Conv2D(
-                    filters=v,
-                    kernel_size=filter_size[k],
-                    padding="same",
-                    activation="relu",
-                )
-            )
-
         model.add(
-            MaxPool2D(pool_size=pooling_size[k], strides=2, padding="valid"))
+            Conv2D(
+                filters=v,
+                kernel_size=filter_size[k],
+                padding="same",
+                activation="relu",
+            )
+        )
+        model.add(BatchNormalization())
+        model.add(
+            MaxPool2D(pool_size=pooling_size[k], strides=2, padding="valid")
+        )
 
     # Dense layers
     model.add(Flatten())
     for _, v in enumerate(dense_units):
         model.add(Dense(units=v, activation="relu"))
+        model.add(BatchNormalization())
         model.add(Dropout(drop_out))
 
     # output layer
@@ -124,8 +116,17 @@ def plot_curves(history):
 
 if __name__ == "__main__":
     # set up the generators
-    train_data_gen = ImageDataGenerator(rescale=1 / 255.0)
-    val_data_gen = ImageDataGenerator(rescale=1 / 255.0)
+    train_data_gen = ImageDataGenerator(
+        rescale=1/255.0,
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True
+    )
+
+    val_data_gen = ImageDataGenerator(rescale=1/255.0)
 
     train_gen = train_data_gen.flow_from_directory(
         train_dir,
@@ -147,7 +148,7 @@ if __name__ == "__main__":
         epochs=epochs,
         validation_data=val_gen,
         validation_steps=50,
-        callbacks=[callback_ES, callback_CP]
+        callbacks=[callback_ES]
     )
-    model.save("catsVdogs_model1.h5")
+    model.save("catsVdogs_model2.h5")
     plot_curves(history)
