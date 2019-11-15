@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 
 try:
-    assert tf.__version__ == "2.0.0-beta1"
+    assert tf.__version__ == "2.0.0"
 except Exception as e:
     print(f"Error Wrong version of tensorflow")
     sys.exit()
