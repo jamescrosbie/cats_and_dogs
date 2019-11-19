@@ -14,6 +14,7 @@ def wrap_bytes(value):
 
 
 def convert(image_paths, labels, out_path):
+    """Converts images to TFRecords"""
     # image_paths   list of paths for the images
     # labels        list of class labels for the images
     # out_path      path to the TFRecords output file
@@ -26,7 +27,7 @@ def convert(image_paths, labels, out_path):
 
         # Iterate over all the images and labels
         for i, (path, label) in enumerate(zip(image_paths, labels)):
-            # Print progress.
+            # Print progress
             if i % 100 == 0:
                 print(f"\tConverting images {i}")
 
@@ -55,7 +56,8 @@ def convert(image_paths, labels, out_path):
 
 
 def makeTFRecords(dir):
-
+    """Clears current set of TFRecords for dir and makes new set in dir"""
+    # dir   path to clear and create TFRecord set e.g train, test, val
     files = os.listdir(f"./{dir}/{dir}_tfrecord")
     if files:
         for file in files:
