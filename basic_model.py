@@ -69,7 +69,6 @@ def build_model():
                 Conv2D(
                     filters=v,
                     kernel_size=filter_size[k],
-                    padding="same",
                     activation="relu",
                     input_shape=input_size,
                 )
@@ -79,7 +78,6 @@ def build_model():
                 Conv2D(
                     filters=v,
                     kernel_size=filter_size[k],
-                    padding="same",
                     activation="relu",
                 )
             )

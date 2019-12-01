@@ -1,7 +1,7 @@
 import tensorflow as tf
-from matplotlib.image import imread
 import glob
 import os
+import cv2
 
 
 # helper functions
@@ -32,12 +32,16 @@ def convert(image_paths, labels, out_path):
                 print(f"\tConverting images {i}")
 
             # Load image
-            img = imread(path)
+            img = cv2.imread(path)
+            height, width, channels = img.shape
             # Convert the image to raw bytes
             img_bytes = img.tostring()
 
             # Create a dict with the data wanted to save in the TFRecords file
             data = {
+                'width': wrap_int64(width),
+                'height': wrap_int64(height),
+                'channels': wrap_int64(channels),
                 'image': wrap_bytes(img_bytes),
                 'label': wrap_int64(label)
             }

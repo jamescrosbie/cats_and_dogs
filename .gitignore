@@ -10,5 +10,6 @@ kaggle_test.zip
 kaggle_train.zip
 # model history
 /checkpoints/*
+/ipynb_checkpoints/*
 # model
 *.h5
