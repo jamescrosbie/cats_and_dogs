@@ -127,7 +127,7 @@ if __name__ == "__main__":
     )
 
     # build model
-    model = build_model()
+    model = build_model(dense_units=[256], lr=1e-5)
     print(model.summary())
     history = model.fit_generator(
         train_gen,
