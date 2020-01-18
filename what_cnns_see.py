@@ -16,7 +16,7 @@ print(f"TensorFlow running on {tf.test.gpu_device_name}")
 # parameters
 ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--model", default="", help="path to model")
-ap.add_argument("-l", "--layer", default=1, type=int,
+ap.add_argument("-l", "--layer", default=15, type=int,
                 help="Convolutional layer to visualise")
 ap.add_argument("-i", "--index", default=0, type=int,
                 help="Convolutional filter to visualise")
@@ -29,17 +29,18 @@ print(f"Viewing parameters {args}")
 model = VGG16(weights="imagenet", include_top=True) if args["model"] == "" else models.load_model(
     args["model"])
 
-
 # summarize feature map shapes
 conv_layers = []
 for i in range(len(model.layers)):
     layer = model.layers[i]
+    if "conv" in layer.name:
+        conv_layers.append((i, layer.name))
     # summarize output shape
     print(f"Layer index {i}, Name: {layer.name}, Shape: {layer.output.shape}")
     conv_layers.append([i, layer.name])
 
-layer_index = conv_layers[args["layer"]][0]
-layer_name = conv_layers[args["layer"]][1]
+layer_index = model.layers[args["layer"]][0]
+layer_name = model.layers[args["layer"]][1]
 print(f"Using layer {layer_index} with name {layer_name}")
 
 # #############################################
@@ -76,6 +77,7 @@ print(f"Image shape {img_tensor.shape}")
 feature_maps = model(img_tensor)
 
 plt.imshow(feature_maps[0, :, :, layer_index])
+plt.show()
 
 # plot all feature maps in layer as square
 square = int(np.sqrt(layer_output.shape[-1]))
@@ -139,19 +141,19 @@ img = get_Feature_map(layer_index)
 plt.imshow(img[:, :, 0])
 plt.show()
 
-# square = 8
-# ix = 1
-# for _ in range(square):
-#     for _ in range(square):
-#         # specify subplot and turn of axis
-#         ax = plt.subplot(square, square, ix)
-#         ax.set_xticks([])
-#         ax.set_yticks([])
-#         # plot filter channel in grayscale
-#         img = get_Feature_map(ix - 1)
-#         plt.imshow(img[:, :, 0])
-#         ix += 1
-# plt.show()
+square = 8
+ix = 1
+for _ in range(square):
+    for _ in range(square):
+        # specify subplot and turn of axis
+        ax = plt.subplot(square, square, ix)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # plot filter channel in grayscale
+        img = get_Feature_map(ix - 1)
+        plt.imshow(img[:, :, 0])
+        ix += 1
+plt.show()
 
 
 # #############################################
@@ -171,22 +173,7 @@ model = VGG16(weights="imagenet")
 pred = model.predict(img_tensor)
 print(f"Predition {decode_predictions(pred, top=3)[0]}")
 
-last_conv_layer = model.get_layer("block5_conv3")
-heatmap_model = models.Model(
-    [model.inputs], [last_conv_layer.output, model.output])
-
-with tf.GradientTape() as tape:
-    # make prediction
-    conv_output, predictions = heatmap_model(img_tensor)
-    # calculate loss
-    loss_value = predictions[:, np.argmax(predictions[0])]
-
-# calculate gradient
-grad = tape.gradient(loss_value, conv_output)
-grad_norm = tf.reduce_mean(grad, axis=(0, 1, 2))
-heatmap = tf.reduce_mean(tf.multiply(grad_norm, conv_output), axis=-1)
-
-conv_layer = model.get_layer("block5_conv3")
+conv_layer = model.get_layer(conv_layers[-1][1])
 heatmap_model = models.Model([model.inputs], [conv_layer.output, model.output])
 
 # Get gradient of the winner class w.r.t. the output of the (last) conv. layer
@@ -203,13 +190,20 @@ if max_heat == 0:
     max_heat = 1e-10
 heatmap /= max_heat
 
-print(heatmap[0].shape)
-plt.imshow(heatmap[0])
-plt.show()
+cv2.imshow("Heatmap", heatmap[0])
+cv2.waitKey(0)
 
 img = cv2.imread(image_path)
-heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
-heatmap = np.uint8(heatmap * 255)
-heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-superimposed_image = heatmap * 0.4 + img
-cv2.imshow(superimposed_image)
+print(f"image shape {img.shape}")
+print(f"heatmap shape before {heatmap.shape}")
+heatmap = cv2.resize(heatmap[0], (img.shape[1], img.shape[0]))
+print(f"heatmap shape after {heatmap.shape}")
+
+heatmap = np.uint8(heatmap * 255.)
+hm = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+cv2.imshow("Heatmap", hm)
+cv2.waitKey(0)
+
+superimposed_image = np.uint8(hm * 0.4 + img)
+cv2.imshow("Superimposed image", superimposed_image)
+cv2.waitKey(0)
