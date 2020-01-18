@@ -16,7 +16,7 @@ print(f"TensorFlow running on {tf.test.gpu_device_name}")
 # parameters
 ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--model", default="", help="path to model")
-ap.add_argument("-l", "--layer", default=15, type=int,
+ap.add_argument("-l", "--layer", default=1, type=int,
                 help="Convolutional layer to visualise")
 ap.add_argument("-i", "--index", default=0, type=int,
                 help="Convolutional filter to visualise")
@@ -37,10 +37,9 @@ for i in range(len(model.layers)):
         conv_layers.append((i, layer.name))
     # summarize output shape
     print(f"Layer index {i}, Name: {layer.name}, Shape: {layer.output.shape}")
-    conv_layers.append([i, layer.name])
 
-layer_index = model.layers[args["layer"]][0]
-layer_name = model.layers[args["layer"]][1]
+layer_index = args["layer"]
+layer_name = model.layers[layer_index].name
 print(f"Using layer {layer_index} with name {layer_name}")
 
 # #############################################
@@ -137,11 +136,12 @@ def get_Feature_map(idx):
     return img
 
 
-img = get_Feature_map(layer_index)
+# show first map
+img = get_Feature_map(0)
 plt.imshow(img[:, :, 0])
 plt.show()
 
-square = 8
+# plot more feature maps
 ix = 1
 for _ in range(square):
     for _ in range(square):
@@ -190,8 +190,8 @@ if max_heat == 0:
     max_heat = 1e-10
 heatmap /= max_heat
 
-cv2.imshow("Heatmap", heatmap[0])
-cv2.waitKey(0)
+plt.imshow(heatmap[0])
+plt.show()
 
 img = cv2.imread(image_path)
 print(f"image shape {img.shape}")
