@@ -4,9 +4,10 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input, Flatten
 from tensorflow.keras.optimizers import Adam, RMSprop
+from tensorflow.keras import models
 
 # base model
-from tensorflow.keras.applications import VGG16
+from tensorflow.keras.applications.vgg16 import VGG16
 
 # for the data
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -15,7 +16,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 try:
     assert tf.__version__ == "2.0.0"
@@ -50,15 +50,15 @@ def build_model(dense_units=[512],
                        input_shape=input_size)
 
     # Build network
-    model = Sequential()
-    model.add(base_model)
-    model.add(Flatten())
+    x = Flatten()(base_model.output)
     for _, v in enumerate(dense_units):
-        model.add(Dense(units=v, activation="relu"))
+        x = Dense(units=v, activation="relu")(x)
 
     # output layer
-    model.add(Dense(1, activation="sigmoid"))
+    output = Dense(1, activation="sigmoid")(x)
 
+    # define model
+    model = models.Model(base_model.input, output)
     print(
         f"Trainable prameters before freeze {len(model.trainable_weights)}"
     )

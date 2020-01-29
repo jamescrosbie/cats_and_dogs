@@ -1,4 +1,3 @@
-# summarize feature map size for each conv layer
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input, decode_predictions
 from tensorflow.keras import models
@@ -15,32 +14,32 @@ print(f"TensorFlow running on {tf.test.gpu_device_name}")
 
 # parameters
 ap = argparse.ArgumentParser()
-ap.add_argument("-m", "--model", default="", help="path to model")
+ap.add_argument("-m", "--model", default="",
+                help="Model to use in visualization")
 ap.add_argument("-l", "--layer", default=1, type=int,
                 help="Convolutional layer to visualise")
 ap.add_argument("-i", "--index", default=0, type=int,
-                help="Convolutional filter to visualise")
-ap.add_argument("-e", "--epochs", default=200, type=int,
+                help="Convolutional filter to visualise in chosen layer")
+ap.add_argument("-e", "--epochs", default=100, type=int,
                 help="Number of epochs to train model for")
 args = vars(ap.parse_args())
 print(f"Viewing parameters {args}")
 
-# load the model
-model = VGG16(weights="imagenet", include_top=True) if args["model"] == "" else models.load_model(
-    args["model"])
 
-# summarize feature map shapes
-conv_layers = []
-for i in range(len(model.layers)):
-    layer = model.layers[i]
-    if "conv" in layer.name:
-        conv_layers.append((i, layer.name))
-    # summarize output shape
-    print(f"Layer index {i}, Name: {layer.name}, Shape: {layer.output.shape}")
+# load the model
+model = models.load_model(
+    args["model"]) if args["model"] else VGG16(weights="imagenet")
 
 layer_index = args["layer"]
+filter_index = args["index"]
 layer_name = model.layers[layer_index].name
+
+# summarize layers and their indicies
+for k, v in enumerate(model.layers):
+    # summarize output shape
+    print(f"Layer index {k}, Name: {v.name}, Shape: {v.output.shape}")
 print(f"Using layer {layer_index} with name {layer_name}")
+
 
 # #############################################
 # What the feature maps see from an image
@@ -48,9 +47,8 @@ print(f"Using layer {layer_index} with name {layer_name}")
 
 # define new model with output as layer of interest
 model = models.Model(inputs=model.inputs,
-                     outputs=model.get_layer(layer_name).output)
-
-layer_output = model.get_layer(layer_name).output
+                     outputs=model.layers[layer_index].output)
+layer_output = model.layers[layer_index].output
 
 # select a random image
 files_1 = glob.glob("./test/test_cats/*")
@@ -75,7 +73,7 @@ print(f"Image shape {img_tensor.shape}")
 # get feature map for layer
 feature_maps = model(img_tensor)
 
-plt.imshow(feature_maps[0, :, :, layer_index])
+plt.imshow(feature_maps[0, :, :, filter_index])
 plt.show()
 
 # plot all feature maps in layer as square
@@ -127,8 +125,6 @@ def get_Feature_map(idx):
         # calculate gradient
         grad = tape.gradient(loss_value, input_)
         grad_norm = grad / tf.sqrt(tf.reduce_mean(tf.square(grad)) + 1e-05)
-        if i % 1000 == 0:
-            print(f"\tIteration {i}\tLoss : {loss_value}")
         input_.assign_add(grad_norm * step)
 
     input_ = tf.convert_to_tensor(input_).numpy()
@@ -136,9 +132,9 @@ def get_Feature_map(idx):
     return img
 
 
-# show first map
-img = get_Feature_map(0)
-plt.imshow(img[:, :, 0])
+# show feature map of interest
+img = get_Feature_map(filter_index)
+plt.imshow(img)
 plt.show()
 
 # plot more feature maps
@@ -151,7 +147,7 @@ for _ in range(square):
         ax.set_yticks([])
         # plot filter channel in grayscale
         img = get_Feature_map(ix - 1)
-        plt.imshow(img[:, :, 0])
+        plt.imshow(img)
         ix += 1
 plt.show()
 
@@ -160,51 +156,58 @@ plt.show()
 # Heat maps
 # #############################################
 
-# convert image to tensor
-image_path = "./images/elephant.jpg"
-img = image.load_img(image_path, target_size=(224, 224))
-img_tensor = image.img_to_array(img)
-# expand dimensions so that it represents a single 'sample'
-img_tensor = np.expand_dims(img_tensor, axis=0)
-img_tensor = preprocess_input(img_tensor)
+file_1 = glob.glob("./test/test_cats/*")
+file_2 = glob.glob("./test/test_dogs/*")
+images = []
+images.append(file_1[random.randint(1, len(file_1))])
+images.append(file_2[random.randint(1, len(file_2))])
 
-# make a prediction
-model = VGG16(weights="imagenet")
-pred = model.predict(img_tensor)
-print(f"Predition {decode_predictions(pred, top=3)[0]}")
+# load model
+model = models.load_model(
+    args["model"]) if args["model"] else VGG16(weights="imagenet")
+(h, w) = model.layers[0].output.shape[1:3]
 
-conv_layer = model.get_layer(conv_layers[-1][1])
-heatmap_model = models.Model([model.inputs], [conv_layer.output, model.output])
+heatmap_model = models.Model(
+    model.inputs, [model.get_layer(layer_name).output, model.output])
 
-# Get gradient of the winner class w.r.t. the output of the (last) conv. layer
-with tf.GradientTape() as tape:
-    conv_output, predictions = heatmap_model(img_tensor)
-    loss = predictions[:, np.argmax(predictions[0])]
+for k, image_path in enumerate(images):
+    # convert image to tensor
+    img = image.load_img(image_path, target_size=(h, w))
+    img_tensor = image.img_to_array(img)
+    # expand dimensions so that it represents a single 'sample'
+    img_tensor = np.expand_dims(img_tensor, axis=0)
+    img_tensor = preprocess_input(img_tensor)
 
-grads = tape.gradient(loss, conv_output)
-pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    # Get gradient of the winner class w.r.t. the output of the conv. layer
+    with tf.GradientTape() as tape:
+        conv_output, predictions = heatmap_model(img_tensor)
+        loss = predictions[:, np.argmax(predictions[0])]
 
-heatmap = tf.reduce_mean(tf.multiply(pooled_grads, conv_output), axis=-1)
-heatmap = np.maximum(heatmap, 0)
-max_heat = np.max(heatmap)
-if max_heat == 0:
-    max_heat = 1e-10
-heatmap /= max_heat
+    grads = tape.gradient(loss, conv_output)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
 
-plt.imshow(heatmap[0])
-plt.show()
+    heatmap = tf.reduce_mean(tf.multiply(pooled_grads, conv_output), axis=-1)
+    heatmap = np.maximum(heatmap, 0)
+    max_heat = np.max(heatmap)
+    if max_heat == 0:
+        max_heat = 1e-10
+    heatmap /= max_heat
 
-img = cv2.imread(image_path)
-print(f"image shape {img.shape}")
-print(f"heatmap shape before {heatmap.shape}")
-heatmap = cv2.resize(heatmap[0], (img.shape[1], img.shape[0]))
-print(f"heatmap shape after {heatmap.shape}")
+    img = cv2.imread(image_path)
+    cv2.imshow("Image", img)
+    cv2.imwrite(f"./images/img2_{k}.jpg", img)
+    print(f"image shape {img.shape}")
+    print(f"heatmap shape before {heatmap.shape}")
+    heatmap = cv2.resize(heatmap[0], (img.shape[1], img.shape[0]))
+    print(f"heatmap shape after {heatmap.shape}")
 
-heatmap = np.uint8(heatmap * 255.)
-hm = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-cv2.imshow("Heatmap", hm)
-cv2.waitKey(0)
+    heatmap = np.uint8(heatmap * 255.)
+    hm = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    cv2.imshow("Heatmap", hm)
+    cv2.waitKey(0)
+    cv2.imwrite(f"./images/heatmap2_{k}.jpg", hm)
 
-superimposed_image = np.uint8(hm * 0.4 + img)
-cv2.imshow("Superimposed image", superimposed_image)
-cv2.waitKey(0)
+    superimposed_image = np.uint8(hm * 0.4 + img)
+    cv2.imshow("Superimposed image", superimposed_image)
+    cv2.waitKey(0)
+    cv2.imwrite(f"./images/superimposed2_{k}.jpg", superimposed_image)
