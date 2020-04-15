@@ -6,6 +6,7 @@ base_data/*
 test/*
 train/*
 val/*
+TFRecords/*
 kaggle_test.zip
 kaggle_train.zip
 # model history

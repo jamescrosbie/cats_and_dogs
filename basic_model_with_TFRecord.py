@@ -26,9 +26,9 @@ except Exception as e:
 
 # parameters
 input_size = (150, 150, 3)
-training_filenames = "./train/train_tfrecord/train.tfrecord"
-validation_filenames = "./val/val_tfrecord/val.tfrecord"
-test_dir = "./test/test_tfrecord/test.tfrecord"
+training_filenames = "./TFRecords/train_tfrecord/train.tfrecord"
+validation_filenames = "./TFRecords/val_tfrecord/val.tfrecord"
+test_dir = "./TFRecords/test_tfrecord/test.tfrecord"
 
 # hypter parameters
 batch_size = 32

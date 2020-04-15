@@ -5,6 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input, Flatten
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras import models
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 # base model
 from tensorflow.keras.applications.vgg16 import VGG16
@@ -14,29 +15,47 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # analysis
 import sys
+from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
 try:
-    assert tf.__version__ == "2.0.0"
+    assert tf.__version__ >= "2.0.0"
 except Exception as e:
     print(f"Error Wrong version of tensorflow")
     sys.exit()
 
 
 # parameters
-input_size = (150, 150, 3)
+input_size = (224, 224, 3)
 train_dir = "./train"
 val_dir = "./val"
 test_dir = "./test"
 
 # hyper parameters
-batch_size = 32
-epochs = 100
+batch_size = 8
+epochs = 30
 val_split = 0.33
 
+folders = glob(train_dir + '/*')
+classes = len(folders)
+image_files = glob(train_dir + '/*/*.jp*g')
+val_image_files = glob(val_dir + '/*/*.jp*g')
 
-def build_model(dense_units=[512],
+# callbacks
+checkpointer = ModelCheckpoint(filepath="catsVdogs_model_with_transfer_learning.hdf5",
+                               monitor='val_acc',
+                               verbose=1,
+                               save_weights_only=False,
+                               save_best_only=True)
+early = EarlyStopping(monitor='val_acc',
+                      min_delta=0,
+                      patience=20,
+                      verbose=1,
+                      mode='auto')
+
+
+def build_model(dense_units=[4096, 4096],
                 drop_out=0.0,
                 optimFun="RMSprop",
                 lr=1e-4):
@@ -49,20 +68,22 @@ def build_model(dense_units=[512],
     base_model = VGG16(weights="imagenet", include_top=False,
                        input_shape=input_size)
 
+    for layer in base_model.layers:
+        layer.trainable = False
+
     # Build network
     x = Flatten()(base_model.output)
-    for _, v in enumerate(dense_units):
-        x = Dense(units=v, activation="relu")(x)
+    for k, v in enumerate(dense_units):
+        x = Dense(units=v, activation="relu", name=f"myDense_{k}")(x)
 
     # output layer
-    output = Dense(1, activation="sigmoid")(x)
+    output = Dense(classes, activation="softmax", name='myPrediction')(x)
 
     # define model
     model = models.Model(base_model.input, output)
     print(
         f"Trainable prameters before freeze {len(model.trainable_weights)}"
     )
-    base_model.trainable = False
     print(
         f"Trainable prameters after freeze {len(model.trainable_weights)}"
     )
@@ -72,7 +93,9 @@ def build_model(dense_units=[512],
     else:
         opt = RMSprop(learning_rate=lr)
 
-    model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["acc"])
+    model.compile(loss="categorical_crossentropy",
+                  optimizer=opt,
+                  metrics=["acc"])
 
     return model
 
@@ -115,26 +138,27 @@ if __name__ == "__main__":
     train_gen = train_data_gen.flow_from_directory(
         train_dir,
         target_size=input_size[:2],
-        batch_size=batch_size,
-        class_mode="binary"
+        shuffle=True,
+        batch_size=batch_size
     )
 
     val_gen = train_data_gen.flow_from_directory(
         val_dir,
         target_size=input_size[:2],
-        batch_size=batch_size,
-        class_mode="binary"
+        shuffle=True,
+        batch_size=batch_size
     )
 
     # build model
-    model = build_model(dense_units=[256], lr=1e-5)
+    model = build_model()
     print(model.summary())
     history = model.fit_generator(
         train_gen,
-        steps_per_epoch=100,
-        epochs=30,
+        epochs=epochs,
+        callbacks=[checkpointer, early],
+        steps_per_epoch=len(image_files) // batch_size,
         validation_data=val_gen,
-        validation_steps=50
+        validation_steps=len(val_image_files) // batch_size
     )
-    model.save("catsVdogs_model_with_transfer_learning.h5")
+    # model.save("catsVdogs_model_with_transfer_learning.h5")
     plot_curves(history)
