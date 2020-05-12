@@ -86,14 +86,15 @@ def build_model(filters=[32, 64, 128, 128],
             model.add(BatchNormalization())
 
     # output layer
-    model.add(Dense(1, activation="sigmoid"))
+    model.add(Dense(2, activation="softmax"))
 
     if optimFun == "Adam":
         opt = Adam(learning_rate=lr)
     if optimFun == "RMSprop":
         opt = RMSprop(learning_rate=lr)
 
-    model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["acc"])
+    model.compile(loss="categorical_crossentropy",
+                  optimizer=opt, metrics=["acc"])
 
     return model
 
@@ -177,5 +178,5 @@ if __name__ == "__main__":
                         epochs=epochs,
                         validation_data=get_validation_dataset(),
                         validation_steps=validation_steps)
-    model.save("catsVdogs_model1.h5")
+    model.save("catsVdogs_model_tfrecord.hdf5")
     plot_curves(history)

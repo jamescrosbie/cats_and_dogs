@@ -2,7 +2,7 @@ import tensorflow as tf
 
 # for the model
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Input, Flatten
+from tensorflow.keras.layers import Dense, Dropout, Input, Flatten, GlobalAveragePooling2D
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras import models
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -48,11 +48,12 @@ checkpointer = ModelCheckpoint(filepath="catsVdogs_model_with_transfer_learning.
                                verbose=1,
                                save_weights_only=False,
                                save_best_only=True)
+
 early = EarlyStopping(monitor='val_acc',
                       min_delta=0,
-                      patience=20,
+                      patience=2,
                       verbose=1,
-                      mode='auto')
+                      mode='min')
 
 
 def build_model(dense_units=[4096, 4096],
@@ -71,10 +72,12 @@ def build_model(dense_units=[4096, 4096],
     for layer in base_model.layers:
         layer.trainable = False
 
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+
     # Build network
-    x = Flatten()(base_model.output)
-    for k, v in enumerate(dense_units):
-        x = Dense(units=v, activation="relu", name=f"myDense_{k}")(x)
+    # for k, v in enumerate(dense_units):
+    #     x = Dense(units=v, activation="relu", name=f"myDense_{k}")(x)
 
     # output layer
     output = Dense(classes, activation="softmax", name='myPrediction')(x)
@@ -160,5 +163,5 @@ if __name__ == "__main__":
         validation_data=val_gen,
         validation_steps=len(val_image_files) // batch_size
     )
-    # model.save("catsVdogs_model_with_transfer_learning.h5")
+    model.save("catsVdogs_model_with_transfer_learning.h5")
     plot_curves(history)

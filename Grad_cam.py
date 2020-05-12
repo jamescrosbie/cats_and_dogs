@@ -28,17 +28,30 @@ images.append(file_2[random.randint(1, len(file_2))])
 # # load model
 # model = models.load_model(
 #     args["model"]) if args["model"] else VGG16(weights="imagenet")
-model = models.load_model("catsVdogs_model_with_transfer_learning.hdf5")
+model = models.load_model("catsVdogs_model_with_transfer_learning.h5")
 
+print(model.summary())
+
+# get expected size of input image
 (h, w) = model.layers[0].output.shape[1:3]
 
+# get last convolutional layer
+conv = []
+for index, layer in enumerate(model.layers):
+    if "conv" in layer.name:
+        conv.append((index, layer.name))
+last_conv_layer = conv[-1][1]
+print(f"Last conv layer shape {model.get_layer(last_conv_layer).output.shape}")
+
+# get weights from last layer to weight last conv layer
+dense = model.layers[conv[-1][0]+3]
+W = dense.get_weights()[0]
+print(f"Weights shape {W.shape}")
+
 heatmap_model = models.Model(inputs=model.inputs,
-                             outputs=[model.get_layer(layer_name).output, model.output])
+                             outputs=[model.get_layer(last_conv_layer).output, model.output])
 
-final_dense = model.get_layer("myPrediction")
-W = final_dense.get_weights()[0]
-
-for k, image_path in enumerate(images[0]):
+for k, image_path in enumerate(images):
     # convert image to tensor
     img = image.load_img(image_path, target_size=(h, w))
 
