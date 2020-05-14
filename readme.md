@@ -57,16 +57,10 @@ Looking at `block5_conv1` gives:
 
 
 ### Heatmaps
-When the `what_cnns_see.py` is applied to the Dogs vs Cats data, on the early layers the following heat maps are produced.
-<p float="center">
-    <img src="./images/img_0.jpg", width="275", height=300>
-    <img src="./images/heatmap_0.jpg", width="275", height=300>
-    <img src="./images/superimposed_0.jpg", width="275", height=300>
-    <img src="./images/img_1.jpg", width="275", height=300>
-    <img src="./images/heatmap_1.jpg", width="275", height=300>
-    <img src="./images/superimposed_1.jpg", width="275", height=300> 
-</p>
-These aren't very descriptive.  But later layers 
+
+This [article](https://www.pyimagesearch.com/2020/03/09/grad-cam-visualize-class-activation-maps-with-keras-tensorflow-and-deep-learning/) gives a great explanation of heatmaps and why they are useful.  In summary, practitioners visually debug their models and properly understand where it’s “looking” in an image, Selvaraju et al. created Gradient-weighted Class Activation Mapping, or more simply, Grad-CAM.  
+
+When the `Grad_cam.py` (Gradient Class Activation Maps) is applied to the Dogs vs Cats data, the following heat maps are produced.
 <p float="center">
     <img src="./images/img2_0.jpg", width="275", height=300>
     <img src="./images/heatmap2_0.jpg", width="275", height=300>
@@ -75,3 +69,5 @@ These aren't very descriptive.  But later layers
     <img src="./images/heatmap2_1.jpg", width="275", height=300>
     <img src="./images/superimposed2_1.jpg", width="275", height=300> 
 </p>
+
+
