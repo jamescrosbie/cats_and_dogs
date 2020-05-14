@@ -9,6 +9,7 @@ val/*
 TFRecords/*
 kaggle_test.zip
 kaggle_train.zip
+bounding_box/*
 # model history
 /checkpoints/*
 /ipynb_checkpoints/*
